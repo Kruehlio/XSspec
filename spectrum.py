@@ -817,13 +817,16 @@ class spectrum2d:
         Pics = np.arange(len(self.wave[arm]))
         if line != '':
             vac = 1
-            if line == 'OIII':
+            if line.upper() == 'OII':
+                lim1 = emllist['[OII](3728)'][0]*(1+self.redshift)-8
+                lim2 = emllist['[OII](3728)'][0]*(1+self.redshift)+8
+            if line.upper()  == 'OIII':
                 lim1 = emllist['[OIII](5007)'][0]*(1+self.redshift)-5
                 lim2 = emllist['[OIII](5007)'][0]*(1+self.redshift)+5
-            elif line in ('Ha', 'Halpha'):
+            elif line in ('Ha', 'Halpha', 'ha'):
                 lim1 = emllist['Halpha'][0]*(1+self.redshift)-5
                 lim2 = emllist['Halpha'][0]*(1+self.redshift)+5
-            elif line in ('Hb', 'Hbeta'):
+            elif line in ('Hb', 'Hbeta', 'hb'):
                 lim1 = emllist['Hbeta'][0]*(1+self.redshift)-5
                 lim2 = emllist['Hbeta'][0]*(1+self.redshift)+5
         
@@ -1083,8 +1086,8 @@ class spectrum2d:
                         prof[mid-n/2], prof[mid+n/2] = 1./(2*n), 1./(2*n)
                 else:
                     pxscale = min(0.3, self.head[arm]['CDELT2'])
-                    lim = int(n / pxscale / 2.3548)
-                    prof[:mid-lim], prof[mid+lim:] = 0, 0
+                    lim = n / pxscale / 2.3548
+                    prof[:int(mid-lim)], prof[int(mid+lim):] = 0, 0
                 
                 prof *= 1./sum(prof)
                 weightd = sum((self.data[arm][i] * prof).transpose()) \
@@ -1324,7 +1327,7 @@ class spectrum2d:
 
     def wltopix(self, arm, wl):
         dl = (self.wave[arm][-1]-self.wave[arm][0]) / (len(self.wave[arm]) - 1)
-        pix = ((wl - self.wave[arm][0]) / dl) + 1
+        pix = ((wl - self.wave[arm][0]) / dl)
         return max(0, int(round(pix)))
 
 ################################################################################  

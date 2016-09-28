@@ -304,7 +304,7 @@ class specPlotter():
         if fwhmfix3 != ''and fwhmfix3 > 10:
             fwhmfix3 = (fwhmfix3**2 + self.s.reso[arm]**2)**0.5
 #            
-        if self.oneddata[arm] == '':
+        if len(self.oneddata[arm]) == 0:
             print '\tERROR: Need to have 1d spectrum for %s arm' %(arm.upper()) 
             return
         #print max(self.wave[arm])
@@ -669,6 +669,11 @@ class specPlotter():
                     excl[i][1] = (excl[i][1]-m)/m*c
             if self.s.skywl != []:
                 skywlplot = (self.s.skywl-m) / m*c   
+        
+#==============================================================================
+# Figure        
+#==============================================================================
+        
         fig = plt.figure(figsize = (9.5, 5.3))
         ax = fig.add_subplot(1, 1, 1)
         ax.yaxis.set_major_formatter(plt.FormatStrFormatter(r'$%s$'))
@@ -705,10 +710,12 @@ class specPlotter():
             ax2.set_ylim([(y1-yzero) * pxscale, (y2 - yzero) * pxscale])
             ax2.yaxis.set_label_position("right")
             ax2.set_ylabel(r'$\rm{Spatial\,position\,(^{\prime\prime})}$', fontsize = fs)
+        
         if excl != []:
             for exc in excl:
                 ax.axvspan(xmin = exc[0], xmax = exc[1],
                            color = 'white', alpha = 0.7)
+        
         if self.s.skywl != []:
             ax.plot(skywlplot, self.s.skytrans*(ymax-ymin)+ymin, '-', color = 'black', 
                     lw = 1.0)
@@ -717,6 +724,7 @@ class specPlotter():
             
         ax.plot(retax, retfit + bguess, color = 'white', lw = 3.5)
         ax.plot(retax, retfit + bguess, color = 'black', lw = 1.5)
+        
         ax.errorbar(x, y, yerr, capsize = 0, color = 'black', fmt = 'o',  
                     mec = 'lightgrey', lw = 1.5, mew = 0.3)
 
@@ -819,7 +827,7 @@ class specPlotter():
                 n = 2
             if self.linepars[linename].has_key('Redshift2'):
                 n = 3
-        print '\tGauss amplitude = %.2f +/- %.2f 10^-%s erg/cm^2/s' %(A, Ae, un)
+        print '\tGauss amplitude = %.2f +/- %.2f 10^-%s erg/cm^2/s/AA' %(A, Ae, un)
         print '\tGauss mean = %.2f +/- %.2f AA' %(m, me)
         print '\tGauss sigma = %.2f +/- %.2f AA' %(s, se)
         print '\tGauss FWHM = %.2f +/- %.2f AA' %(2.3548*s, 2.3548*se)

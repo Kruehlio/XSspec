@@ -12,6 +12,7 @@ from .fitter import (onedgaussian, onedgaussfit, onedtwogaussfit,
 from .functions import (transNIR, tell)
 from .astro import (absll, emll, errs, fluxab, fluxaberr, ergJy,
                  airtovac, binspec)
+                 
 from scipy import integrate
 
 c, c1 = 2.99792458E5, 2.99792458E8
@@ -1118,7 +1119,7 @@ class specPlotter():
 
         wlmin, wlmax = 1E4, 1E3
         for arm in arms:#, 'nir']:
-            if self.wave[arm] != '':
+            if len(self.wave[arm]) > 0:
                 if arm == 'uvb':
                     x1, x2, median, color = ux1, ux2, um, '0.00'
                 if arm == 'vis':
@@ -1130,12 +1131,12 @@ class specPlotter():
                 splitData = self.oneddata[arm][x1:x2]
                 splitErro = self.onederro[arm][x1:x2]      
                 splitWave = self.wave[arm][x1:x2]
-                seltel = self.s.skytel[arm][x1:x2] > 0.95
-                selrad = self.s.skyrad[arm][x1:x2] < 3E3
-                sel = seltel * selrad
+#                seltel = self.s.skytel[arm][x1:x2] > 0.95
+#                selrad = self.s.skyrad[arm][x1:x2] < 3E3
+#                sel = seltel * selrad
 
-                wav, dat, ero = binspec(splitWave[sel], splitData[sel], 
-                                        splitErro[sel], wl = median)
+                wav, dat, ero = binspec(splitWave, splitData, 
+                                        splitErro, wl = median)
                 binsize = wav[1]-wav[0]
                 if len(wav) < 50: lw = 2
                 elif len(wav) < 250: lw = 1

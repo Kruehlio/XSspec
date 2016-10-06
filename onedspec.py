@@ -353,6 +353,7 @@ def extr1d(s2d, arms, opt = 1, n = 4, sig = '', errsc = 1., offset = 0):
             s2d.restwave[arm] = s2d.wave[arm]/(1+s2d.redshift)    
 
 def write1d(s2d, arms, lim1=3.20E3, lim2=2.28E4, error = 1, lum=0):
+
     for arm in arms:
         f = open('%s.spec' %s2d.output[arm], 'w')
         f.write('#Object: %s\n' %s2d.object)
@@ -375,6 +376,7 @@ def write1d(s2d, arms, lim1=3.20E3, lim2=2.28E4, error = 1, lum=0):
                     f.write('%.6f\t%.4e\n' \
                     %(s2d.wave[arm][i], s2d.oneddata[arm][i]*s2d.mult))           
         f.close()
+        
         if lum != 0:
           if s2d.lumspec[arm] != '':
             f = open('%s_lum.spec' %s2d.output[arm], 'w')

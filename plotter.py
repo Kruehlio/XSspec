@@ -385,7 +385,7 @@ class specPlotter():
         xavg = np.average(xful)
         
         # Region for background
-        backsel = (self.wave[arm] > (xavg - 150/dl)) * (self.wave[arm] < (xavg + 150/dl))  
+        backsel = (self.wave[arm] > (xavg - 75/dl)) * (self.wave[arm] < (xavg + 75/dl))  
         backsel *= (self.wave[arm] > (xavg + 10)) ^ (self.wave[arm] < (xavg - 10))  
 
         mediandat = np.array(self.oneddata[arm][backsel])
@@ -1175,6 +1175,7 @@ class specPlotter():
             ax.set_yscale('log', subsx = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
         ax.set_ylim(lim[0], lim[1])
         ax.set_xlim(wlmin, wlmax)#, yerr=self.onederro[arm])
+        ax.xaxis.set_minor_locator(plt.MultipleLocator(100))
         fig.savefig('%s_1dall.pdf' %(self.s.object))        
         plt.close(fig)
        

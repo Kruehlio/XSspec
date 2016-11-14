@@ -246,7 +246,7 @@ def checkWL(s2d, arms, intensity = 2, chop = 10, mod = 1):
         skyrad = np.array_split(skyrads, chopap)
         skyrms = np.array_split(skyrmss, chopap)
         wavecc = np.array_split(waveccs, chopap)
-        wloff, wls, wlerrs, fwhms, offset, sigma = [], [], [], [], 0, 2
+        wloff, wls, wlerrs, fwhms, sigma = [], [], [], [], 2
         pp = PdfPages('%s_wlacc_%s.pdf' %(s2d.object, arm))
         for i in range(len(skyrad)):
             corr = np.correlate(skyrms[i], skyrad[i], "full")
@@ -263,11 +263,15 @@ def checkWL(s2d, arms, intensity = 2, chop = 10, mod = 1):
             corrc -= np.polyval(b, xcor)
             corrc *= 1/max(corrc)
             # Fit Gauss
+            offset = xcor[np.where(corrc==corrc.max())]
+            peak = corrc.max()
+
             params = onedgaussfit(xcor, corrc, err = corrc*0+err,
-                                  params=[0, 1, offset, sigma],
+                                  params=[0, peak, offset, sigma],
                                   fixed=[0, 0, 0, 0],
                                   minpars=[0, 0, 0, 0],
                                   limitedmin=[0, 0, 0, 0])  
+            
             offset, sigma = params[0][2], params[0][3]
             fwhms.append(sigma*dl*2.3538)
             wloff.append(params[0][2]*dl)

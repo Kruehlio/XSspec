@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.mlab as mlab
+import time
 
 from matplotlib.backends.backend_pdf import PdfPages
 
@@ -27,6 +28,7 @@ def makeProf(s2d, arm, lim1 = 3.4E3, lim2 = 25E3, chop = 1, order = 0,
     tracemid, tracesig, tracemide, tracesige, tracepic, tracewl = 6 * [np.array([])]
     tracebet, tracebete = [], []
     Pics = np.arange(len(s2d.wave[arm]))
+    
     if line != '':
         vac = 1
         if line.upper() == 'OII':
@@ -46,13 +48,12 @@ def makeProf(s2d, arm, lim1 = 3.4E3, lim2 = 25E3, chop = 1, order = 0,
         print '\t\tConverting limits to vacuum'
         lim1 = airtovac(lim1)
         lim2 = airtovac(lim2)
-        
-    wlsel = (lim1 < s2d.wave[arm]) * (s2d.wave[arm] < lim2) 
+    wlsel = (lim1 < s2d.wave[arm]) * (s2d.wave[arm] < lim2)# *\
+#        (s2d.wave[arm] > 1215.6*(1+s2d.redshift)*1.1)
     sData = np.array_split(s2d.data[arm][wlsel], chop)
     sWave = np.array_split(s2d.wave[arm][wlsel], chop)
     sErro = np.array_split(s2d.erro[arm][wlsel], chop)
     sPics = np.array_split(Pics[wlsel], chop)
-    
     pp = PdfPages('%s_profiles_%s.pdf' %(s2d.object, arm))
 
     for i in range(len(sData)):
@@ -79,7 +80,7 @@ def makeProf(s2d, arm, lim1 = 3.4E3, lim2 = 25E3, chop = 1, order = 0,
                     if np.std(line) > 3*stdline:
                         stdline = np.std(line)
                     sel = (line < stdmed + 10*stdline) * (line > stdmed - 10*stdline)
-                    if sel.all() == True or len(line) < 10:
+                    if sel.all() == True or len(line[sel]) < 20:
                         break
                     line = np.array(line[sel])
                     linee = np.array(linee[sel])
@@ -106,7 +107,7 @@ def makeProf(s2d, arm, lim1 = 3.4E3, lim2 = 25E3, chop = 1, order = 0,
             
             if fwhm != '':  sig, fw = fwhm/2.3548, 1
             else: sig, fw = 3, 0
-            
+ 
             if profile == 'moffat':
                 params = onedmoffatfit(X, sprof, err = sprofe,
                               params=[0, 1, mean, sig, 3.5],
@@ -130,7 +131,8 @@ def makeProf(s2d, arm, lim1 = 3.4E3, lim2 = 25E3, chop = 1, order = 0,
                         %(params[0][3] * 2 * (2**(1./params[0][4]) - 1 )**0.5)
                 else:    
                     print '\t\tSigma of trace y = %.2f +/- %.2f px' %(params[0][3], params[2][3])
-                
+            t1 = time.time()
+
             fig = plt.figure(figsize = (9,6))
             ax = fig.add_subplot(1, 1, 1)
             ax.yaxis.set_major_formatter(plt.FormatStrFormatter(r'$%s$'))
@@ -165,6 +167,7 @@ def makeProf(s2d, arm, lim1 = 3.4E3, lim2 = 25E3, chop = 1, order = 0,
                     tracebete = np.append(tracebete, max(params[2][4], params[0][4]/40.))
                 tracepic = np.append(tracepic, spic)
                 tracewl =  np.append(tracewl, swave)
+
     
     a = np.polyfit(tracepic, tracemid, order, w = 1./tracemide**2)
     b = np.polyfit(tracepic, tracesig, orderfwhm, w = 1./tracesige**2)
@@ -265,8 +268,8 @@ def extr1d(s2d, arms, opt = 1, n = 4, sig = '', errsc = 1., offset = 0):
             print '\tERROR: Trace necessary for extraction for %s arm' %arm
             raise SystemExit
         if opt == 0:
-            print '\tFixed aperture of %i pixels (%.2f arcsec)' \
-                    %(n, n*pxscale) 
+            print '\tFixed aperture of +/- %.1f pixels (+/-%.2f arcsec) around center' \
+                    %(n/2., n/2.*pxscale) 
         else:
             print '\tOptimal extraction with profile/trace parameters'               
         s2d.output[arm] = s2d.output[arm]+'_1d'
@@ -307,11 +310,15 @@ def extr1d(s2d, arms, opt = 1, n = 4, sig = '', errsc = 1., offset = 0):
             skyrms.append( np.median(skye) )
             skysum.append( np.median(sky) )
             
-            if n > 0 and opt == 0:
+            if n >= 1 and opt == 0:
                 prof = np.zeros(max(bins)+1) + 1./n
                 prof[:int(round(mid-n/2))], prof[int(round(mid+n/2+1)):] = 0, 0
+                
                 if n % 2 == 0:
-                    prof[int(round(mid-n/2))], prof[int(round(mid+n/2))] = 1./(2*n), 1./(2*n)
+                    prof[int(round(mid-n/2))] = 1./(2*n)
+                    prof[int(round(mid+n/2))] = 1./(2*n)
+                if i == 0:
+                    print '\t\tExtracting %i pixels' %len(prof[prof!=0])
             else:
                 lim = n / pxscale / 2.3548
                 prof[:int(round(mid-lim))], prof[int(round(mid+lim)):] = 0, 0

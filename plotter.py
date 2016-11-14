@@ -47,20 +47,28 @@ class specPlotter():
         
     def plot1d(self, arm, wl1, wl2, lim=[], lines = [], chop = 7, ewlim = 0.15,
                unit = 'erg', norm = 0, median = 1, fs = 13,
-               raster = False, ploto = 0):
-
-        if arm == 'uvbvis':
+               raster = False, ploto = 0, rest=False):
+        
+        if len(arm) == 6:
+          if arm == 'uvbvis':
             uvbsel = self.wave['uvb'] < 5550
             vissel = self.wave['vis'] >= 5550
             self.wave[arm] = np.append(self.wave['uvb'][uvbsel], self.wave['vis'][vissel])
             self.onederro[arm] = np.append(self.onederro['uvb'][uvbsel], self.onederro['vis'][vissel])
             self.oneddata[arm] = np.append(self.oneddata['uvb'][uvbsel], self.oneddata['vis'][vissel])
-            self.s.soneddata[arm] = ''
-            self.s.oneddla[arm]  = ''
-            self.s.cont[arm]  = ''
-            self.s.model[arm] = ''
-            # Cosmic in 131231A
-#            self.oneddata[arm][11311] = self.oneddata[arm][11310]/2.+self.oneddata[arm][11312]/2.  
+
+          if arm == 'visnir':
+            vissel = self.wave['vis'] < 10000
+            nirsel = self.wave['nir'] >= 10000
+            self.wave[arm] = np.append(self.wave['vis'][vissel], self.wave['nir'][nirsel])
+            self.onederro[arm] = np.append(self.onederro['vis'][vissel], self.onederro['nir'][nirsel])
+            self.oneddata[arm] = np.append(self.oneddata['vis'][vissel], self.oneddata['nir'][nirsel])
+          
+          self.s.soneddata[arm] = ''
+          self.s.oneddla[arm]  = ''
+          self.s.cont[arm]  = ''
+          self.s.model[arm] = ''
+            
             
         if self.wave[arm] == []:
             print '\tNeed a spectrum for arm %s'%arm
@@ -80,6 +88,13 @@ class specPlotter():
         x2 = self.s.wltopix(arm, wl2)
         chopsize = {7: [16*2/3., 0.06], 5: [14*2/3., 0.10], 3: [11*2/3., 0.14],
                      2 : [9*2/3., 0.17], 1 : [7*2/3., 0.17]}
+
+        if rest == True:
+            z = self.s.redshift
+        else:
+            z = 0
+
+
         fig = plt.figure(figsize = (8, chopsize[chop][0]))
         fig.subplots_adjust(bottom=chopsize[chop][1], top=0.95, left=0.14, right=0.97)
         fig.subplots_adjust(hspace=0.22, wspace=0.0)
@@ -121,6 +136,7 @@ class specPlotter():
             ax.yaxis.set_major_formatter(plt.FormatStrFormatter(r'$%s$'))
             ax.xaxis.set_major_formatter(plt.FormatStrFormatter(r'$%i$'))
             ax.tick_params(axis='both', which='major', labelsize=fs)    
+            
             for redi, c in zip(self.s.intsys.keys(), colors):
                 prvline, j = 0, 0
                 for line in self.s.intsys[redi]: 
@@ -137,10 +153,12 @@ class specPlotter():
                             elif line == 'Lyb_1025': linedesc = r'$\rm{Ly}\beta$'
                             elif line == 'Lya_1215': linedesc = r'$\rm{Ly}\alpha$'
                             else: linedesc = r'$\rm{%s}$' %(line.split('_')[0])
-                            ax.text(redwl+off, liney, linedesc, ha = horzal, color = c)
+                            ax.text((redwl+off)/(1+z), liney, linedesc, 
+                                    ha = horzal, color = c)
                             prvline = redwl
                     else:
                         print('%s not found in line list' %line)
+            
             prvline, j, = 0, 0
             if isinstance(lines, str) and os.path.isfile(lines):
                 f = open(lines, 'r')
@@ -160,7 +178,7 @@ class specPlotter():
                     if redwl < min(max(wav), wl2) and redwl > max(min(wav), wl1):
                       ax.axvline(x=redwl, ymin = 0.6, lw = 1.5, 
                                color='#663300', alpha = 0.4)
-                      ax.text(redwl+off, liney, r'$\rm{%s}$'%linedesc, 
+                      ax.text((redwl+off)/(1+z), liney, r'$\rm{%s}$'%linedesc, 
                               ha = horzal, color ='#663300')
                       prvline = redwl
 
@@ -184,55 +202,52 @@ class specPlotter():
                         elif line[0] == 'Hbeta': linedesc = r'$\rm{H}\beta$'
                         elif line[0] == 'Halpha': linedesc = r'$\rm{H}\alpha$'
                         else: linedesc = r'$\rm{%s}$' %(line[0].split('_')[0])
-                        ax.text(redwl+off, liney, linedesc, ha = horzal,
+                        ax.text((redwl+off)/(1+z), liney, linedesc, ha = horzal,
                                 color ='#663300')
                         prvline = redwl
+            
             if arm == 'uvb':
-                ax.axvspan(5650, 5720, ymin=0.0, ymax=0.05, alpha=0.3,
+                ax.axvspan(5650/(1+z), 5720/(1+z), ymin=0.0, ymax=0.05, alpha=0.3,
                         color = '#6688BB')
+            
             if norm == 0:
                 if unit == 'erg':
-                    ax.plot(wav, ero*mult, color = 'grey', alpha = 1.0, # rasterized = raster,
+                    ax.plot(wav/(1+z), ero*mult, color = 'grey', alpha = 1.0, # rasterized = raster,
                             drawstyle = 'steps-mid',  lw = 0.6, zorder = 1) 
-                    ax.plot(wav, dat*mult, #ero*mult, binsize/2,
+                    ax.plot(wav/(1+z), dat*mult, #ero*mult, binsize/2,
                             color = 'firebrick',# rasterized = raster,
                             drawstyle = 'steps-mid',  lw = 0.8, zorder = 10)#, capsize = 0)
                 elif unit == 'Jy':
-                    ax.plot(wav, ergJy(ero, wav), color = 'grey', alpha = 1.0, # rasterized = raster,
+                    ax.plot(wav/(1+z), ergJy(ero, wav), color = 'grey', alpha = 1.0, # rasterized = raster,
                             drawstyle = 'steps-mid',  lw = 0.6, zorder = 1) 
-                    ax.plot(wav, ergJy(dat, wav), #ero*mult, binsize/2,
+                    ax.plot(wav/(1+z), ergJy(dat, wav), #ero*mult, binsize/2,
                             color = 'firebrick',# rasterized = raster,
                             drawstyle = 'steps-mid',  lw = 0.8, zorder = 10)#, capsize = 0)
                      
-                if self.s.wave.has_key(arm+'o') and ploto == 1:
-                    ax.plot(self.s.wave[arm+'o'], 
-                            self.s.oneddata[arm+'o']*mult, #ero*mult, binsize/2,
-                            color = 'grey', rasterized = raster, alpha=0.3,
-                            drawstyle = 'steps-mid',  lw = 1)
                 if self.s.model[arm] != '':
-                    ax.plot(wav, model*mult, color = 'green', alpha = 0.8,
+                    ax.plot(wav/(1+z), model*mult, color = 'green', alpha = 0.8,
                                 drawstyle = '-',  lw = 1.5)
                 if self.s.oneddla[arm] != '':
-                    ax.plot(wav, dla*mult, color = 'blue', alpha = 0.8,
+                    ax.plot(wav/(1+z), dla*mult, color = 'blue', alpha = 0.8,
                         drawstyle = '-',  lw = 0.5, zorder = 11)
 
             elif norm == 1:
-                ax.plot(wav, dat/cont, color = 'black', rasterized = raster,
+                ax.plot(wav/(1+z), dat/cont, color = 'black', rasterized = raster,
                             drawstyle = 'steps-mid',  lw = 2)
-                ax.plot(wav, ero/cont, color = 'grey', alpha = 0.8, rasterized = raster,
+                ax.plot(wav/(1+z), ero/cont, color = 'grey', alpha = 0.8, rasterized = raster,
                             drawstyle = 'steps-mid',  lw = 1) 
                 if self.s.model[arm] != '':
-                    ax.plot(wav, model*mult, color = 'green', alpha = 0.8,
+                    ax.plot(wav/(1+z), model*mult, color = 'green', alpha = 0.8,
                                 drawstyle = '-',  lw = 1.5)
                 if self.s.oneddla[arm] != '':
-                    ax.plot(wav2, dla/cont, color = 'red', alpha = 0.8,
+                    ax.plot(wav2/(1+z), dla/cont, color = 'red', alpha = 0.8,
                         drawstyle = '-',  lw = 0.5)
 
-            ax.plot(self.wave[arm], 0*self.wave[arm], color = 'black', lw = 0.1, ls = '--')
+            ax.plot(self.wave[arm]/(1+z), 0*self.wave[arm], color = 'black', lw = 0.1, ls = '--')
             if False:  
-                ax.plot(telwl, np.array(len(telwl)* [lim[i-1][1]*0.93]), 'o',
+                ax.plot(telwl/(1+z), np.array(len(telwl)* [lim[i-1][1]*0.93]), 'o',
                         color = 'yellow', ms = 3.5)
-                ax.plot(transwl, np.array(len(transwl)* [lim[i-1][1]*0.93]), 'o',
+                ax.plot(transwl/(1+z), np.array(len(transwl)* [lim[i-1][1]*0.93]), 'o',
                         color = 'yellow', ms = 6.5)
             if i == (chop/2)+1:
                 if unit == 'Jy':
@@ -246,14 +261,22 @@ class specPlotter():
                     ax.set_ylabel(r'$\rm{Normalized\,flux}$')
             if lim != []:
                 ax.set_ylim(lim[i-1][0], lim[i-1][1])
-            ax.set_xlim(min(wav)-binsize/2, max(wav)+binsize/2)#, yerr=self.onederro[arm])
-            armloc = {'vis':100./chop*7, 'uvb': 50./chop*7, 'uvbvis': 100./chop*7, 
-            'nir': 600./chop*3}
-            majorLocatorX = plt.MultipleLocator(armloc[arm])
-            minorLocatorX = plt.MultipleLocator(armloc[arm]/10)
+            ax.set_xlim(min(wav)/(1+z)-binsize/2, 
+                        max(wav)/(1+z)+binsize/2)#, yerr=self.onederro[arm])
+            
+            armloc = {'vis':100./chop*7, 'uvb': 50./chop*7, 
+            'uvbvis': 100./chop*7, 'nir': 600./chop*3, 'visnir': 200./chop*7, }
+
+            majorLocatorX = plt.MultipleLocator(armloc[arm]/(1+z))
+            minorLocatorX = plt.MultipleLocator(armloc[arm]/10/(1+z))
+
             ax.xaxis.set_major_locator(majorLocatorX)
             ax.xaxis.set_minor_locator(minorLocatorX)
-        ax.set_xlabel(r'$\rm{Observed\,wavelength\, (\AA)}$')
+        if rest == True:
+            ax.set_xlabel(r'$\rm{Restframe\,wavelength\, (\AA)}$')
+        else:
+            ax.set_xlabel(r'$\rm{Observed\,wavelength\, (\AA)}$')
+
         fig.savefig('%s_1d_%s.pdf' %(self.s.object, arm))
 #        fig.savefig('%s_1d_%s.eps' %(self.s.object, arm))#, rasterized = raster, dpi=50)
         plt.close(fig)
@@ -747,11 +770,14 @@ class specPlotter():
             ax.plot(retax, prof1 + bguess, '--', color = 'grey', lw = 1.5) 
             ax.plot(retax, prof3 + bguess, '--', color = 'grey', lw = 1.5) 
 
-        if linename.startswith('H'):
+        if linename.startswith('H') and linename[3] is not 'I':
             plt.figtext(0.69, 0.9, r'$\rm{H}\%s$'%linename[1:], fontsize = 26, ha = 'center', 
                 va = 'center', color = 'black', weight='bold', **kwargs)
         elif linename in ['[OII](3726)', '[OII](3729)']:
             plt.figtext(0.62, 0.9, r'$\rm{[OII]\,(\lambda 3727)}$', fontsize = 26, ha = 'center', 
+                va = 'center', color = 'black', weight='bold', **kwargs)
+        elif linename.startswith('He'):
+            plt.figtext(0.69, 0.9, r'$\rm{HeII}$', fontsize = 26, ha = 'center', 
                 va = 'center', color = 'black', weight='bold', **kwargs)
         elif linename == 'Lyalpha':
             plt.figtext(0.69, 0.9, r'$\rm{Ly}\alpha$', fontsize = 26, ha = 'center', 

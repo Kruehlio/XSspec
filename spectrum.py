@@ -15,6 +15,7 @@ from .postproc import (checkWL, scaleSpec, applyScale, fluxCor,
 from .onedspec import makeProf, extr1d, write1d, smooth1d, writeVP
 from .analysis import (setCont, fitCont, dlaAbs, stackLines, setMod,
                       setAscMod, scaleMod)
+from .starlight import runStar, substarlight
 
 c = constants.c/1E3
 abslist, emllist = absll(), emll()
@@ -230,7 +231,7 @@ class spectrum2d:
 ################################################################################    
 
     def setReso(self, arm, reso):
-        print 'Resolving power in arm %s is R = %.0f' %(arm, reso)
+        print '\tResolving power in arm %s is R = %.0f' %(arm, reso)
         print '\tResolution in arm %s set to %.2f km/s' %(arm, c/reso)
         self.reso[arm] = c/reso
     
@@ -508,6 +509,12 @@ class spectrum2d:
            
 ################################################################################
             
+    def starlight(self, ascii, **kwargs):
+        return runStar(self, ascii)            
+            
+    def substarlight(self, arm, **kwargs):
+        substarlight(self, arm, **kwargs)
+           
     def scaleSpec(self, arm, **kwargs):
         scaleSpec(self, arm, **kwargs)  
 

@@ -16,6 +16,11 @@ def makeProf(s2d, arm, lim1 = 3.4E3, lim2 = 25E3, chop = 1, order = 0,
              line = '', meth = 'weight', profile = None,
              pmin=0, pmax=-1):
     
+    if arm == 'nir':
+      if s2d.head[arm]['HIERARCH ESO INS OPTI5 NAME'].endswith('JH'):     
+         if lim2 > 21E3:
+             lim2 = 20.4E3
+    
     if profile == None:
         profile = s2d.profile[arm]
     else:
@@ -48,6 +53,7 @@ def makeProf(s2d, arm, lim1 = 3.4E3, lim2 = 25E3, chop = 1, order = 0,
         print '\t\tConverting limits to vacuum'
         lim1 = airtovac(lim1)
         lim2 = airtovac(lim2)
+
     wlsel = (lim1 < s2d.wave[arm]) * (s2d.wave[arm] < lim2)# *\
 #        (s2d.wave[arm] > 1215.6*(1+s2d.redshift)*1.1)
     sData = np.array_split(s2d.data[arm][wlsel], chop)
@@ -105,7 +111,7 @@ def makeProf(s2d, arm, lim1 = 3.4E3, lim2 = 25E3, chop = 1, order = 0,
             if mid != '': mean, fm = mid, 1
             else: mean, fm = np.argmax(sprof), 0
             
-            if fwhm != '':  sig, fw = fwhm/2.3548, 1
+            if fwhm != '':  sig, fw = fwhm, 1
             else: sig, fw = 3, 0
  
             if profile == 'moffat':
@@ -185,6 +191,7 @@ def makeProf(s2d, arm, lim1 = 3.4E3, lim2 = 25E3, chop = 1, order = 0,
     ax1 = fig.add_subplot(nplot, 1, 1)
     ax1.yaxis.set_major_formatter(plt.FormatStrFormatter(r'$%s$'))
     ax1.xaxis.set_major_formatter(plt.FormatStrFormatter(r'$%i$'))        
+    ax1.xaxis.set_minor_locator(plt.MultipleLocator(100))        
     
     ax1.xaxis.tick_top()
     ax1.errorbar(tracewl, tracemid + s2d.datarange[arm][0],
@@ -199,6 +206,8 @@ def makeProf(s2d, arm, lim1 = 3.4E3, lim2 = 25E3, chop = 1, order = 0,
     ax2 = fig.add_subplot(nplot, 1, 2)
     ax2.yaxis.set_major_formatter(plt.FormatStrFormatter(r'$%s$'))
     ax2.xaxis.set_major_formatter(plt.FormatStrFormatter(r'$%i$'))        
+    ax2.xaxis.set_minor_locator(plt.MultipleLocator(100))        
+
     ax3=ax2.figure.add_axes(ax2.get_position(), frameon = False)
     ax3.yaxis.set_label_position("right")
     ax3.yaxis.set_major_formatter(plt.FormatStrFormatter(r'$%s$'))
@@ -299,8 +308,8 @@ def extr1d(s2d, arms, opt = 1, n = 4, sig = '', errsc = 1., offset = 0):
                 else:
                     prof = mlab.normpdf( bins, mid, sigma )                    
                 
-                if (int(mid + 3*sigma) > y1) or (int(mid-3*sigma) < y0):
-                    print '\t\tError in sky regions - check profile'
+                if (int(mid + 2*sigma) > y1) or (int(mid-2*sigma) < y0):
+                    print '\t\tError in %s sky regions - check profile' %arm
                     raise SystemExit
                 
                 sky = np.append(s2d.data[arm][i][y0 : int(mid-2*sigma)],

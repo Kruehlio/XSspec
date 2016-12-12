@@ -51,8 +51,8 @@ class specPlotter():
         
         if len(arm) == 6:
           if arm == 'uvbvis':
-            uvbsel = self.wave['uvb'] < 5550
-            vissel = self.wave['vis'] >= 5550
+            uvbsel = self.wave['uvb'] < 5600
+            vissel = self.wave['vis'] >= 5600
             self.wave[arm] = np.append(self.wave['uvb'][uvbsel], self.wave['vis'][vissel])
             self.onederro[arm] = np.append(self.onederro['uvb'][uvbsel], self.onederro['vis'][vissel])
             self.oneddata[arm] = np.append(self.oneddata['uvb'][uvbsel], self.oneddata['vis'][vissel])
@@ -718,8 +718,7 @@ class specPlotter():
                   vmax = vlim2 + 0.03, vmin = vlim1 - 0.03,
                   origin = 'lower', extent = extent, aspect="auto")  
         
-        
-        if len(self.s.smooth[arm]) > 0 or len(self.s.data[arm]) > 0:
+        if len(self.s.trace[arm]) > 0 and len(self.s.data[arm]) > 0:
             #ticks = arange(vlim1, vlim2+round(vlim2/5.,2), round(vlim2/5.,2) )
             #cbar = fig.colorbar(cax, ticks=ticks, orientation='vertical', pad=0.10)
             cbar = fig.colorbar(cax, orientation='vertical', pad=0.12, shrink=0.95)
@@ -883,8 +882,9 @@ class specPlotter():
         return linefl, linefle, prof 
 ################################################################################        
     def plotLine(self, linename, ign = [], u = 'km/s', 
-                 Aw = 20, Awm = '', z = '', FWHM = 1, fixz = False,
+                 Aw = 20, Awm = '', z = '', FWHM = 5, fixz = False,
                  cpm = 10, cpp = 10, verbose = 0):
+        
         if z == '':  z = float(self.s.redshift)
         
         try:
@@ -909,7 +909,6 @@ class specPlotter():
         
         if Awm == '':  Awm = Aw
         fixfwhm = False
-        if FWHM != 1: fixfwhm = True
         sigma = FWHM / 2.3548
         
         dl = (self.wave[arm][-1]-self.wave[arm][0]) / (len(self.wave[arm]) - 1)
@@ -934,6 +933,7 @@ class specPlotter():
             fitx = np.array(list(fitx_a[x1:xig1])+list(fitx_a[xig2:x2]))
             fity = np.array(list(fity_a[x1:xig1])+list(fity_a[xig2:x2]))
             fite = np.array(list(fite_a[x1:xig1])+list(fite_a[xig2:x2]))
+        
         else:
             fitx_a = np.array(self.wave[arm])
             fity_a = np.array(self.s.mult * self.oneddata[arm])
@@ -981,7 +981,7 @@ class specPlotter():
         
         params = onedgaussfit(fitx, fity, err = fite, 
                 params=[cont, -cont, xmid, xsig],
-                fixed=[False, True, fixz, fixfwhm])   
+                fixed=[False, False, fixz, fixfwhm])   
     
         mean, meane = params[0][2], params[2][2]
         con, cone = params[0][0], params[2][0]
@@ -1010,13 +1010,15 @@ class specPlotter():
                 (2*3.1416)**0.5*s
         abssox = params[0][0] + params[0][1]*mlab.normpdf(x, mean, s)* \
                 (2*3.1416)**0.5*s
-        fig = plt.figure(figsize = (8,8))
+
+
+        fig = plt.figure(figsize = (8.5,8))
         ax = fig.add_subplot(1, 1, 1)
         ax.yaxis.set_major_formatter(plt.FormatStrFormatter(r'$%s$'))
         ax.xaxis.set_major_formatter(plt.FormatStrFormatter(r'$%i$'))
 
         # Gauss fit
-#        ax.plot(absgrid, absso, c = 'b', lw=2)
+        ax.plot(absgrid, absso, c = 'b', lw=2)
         # Data
 #            ax.errorbar(x[cpm : int(len(x)/2-xc1) ], 
 #                        y[cpm : int(len(x)/2-xc1) ], 
@@ -1040,14 +1042,14 @@ class specPlotter():
         # Zero 
         ax.plot(x, 0*x, color = 'black', linestyle = '--')
         ymin, ymax = -3 * np.median(yerr), max(y) * 1.1
-        if self.s.telcorr[arm] != '':
-            ax.plot(x, self.s.telcorr[arm][x1:x2]*ymax*0.99,
-                    '-', color = 'firebrick',  lw = 1.5)            
-        elif self.s.skywl != []:
-            ax.plot(skywlplot, self.s.skytrans*ymax*0.99, '-', color = 'firebrick', 
-                    lw = 1.5)
-        # Continuum
-#            ax.plot(x, 0*x + cont, color = 'red', linestyle = '-')
+#        if self.s.telcorr[arm] != '':
+#            ax.plot(x, self.s.telcorr[arm][x1:x2]*ymax*0.99,
+#                    '-', color = 'firebrick',  lw = 1.5)            
+#        elif self.s.skywl != []:
+#            ax.plot(skywlplot, self.s.skytrans*ymax*0.99, '-', color = 'firebrick', 
+#                    lw = 1.5)
+#         Continuum
+        ax.plot(x, 0*x + cont, color = 'red', linestyle = '-')
         ax.set_xlim(xmin, xmax) #, yerr=self.onederro[arm])
         ax.set_ylim(ymin, ymax)
         ax.set_xlabel(xl)

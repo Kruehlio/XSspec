@@ -12,11 +12,16 @@ import time
 import platform
 import matplotlib.pyplot as plt
 
+from .astro import binspec
+from matplotlib.backends.backend_pdf import PdfPages
 
-SL_BASE = os.path.join(os.path.dirname(__file__), "etc/Base.BC03.S")
+SL_BASE = os.path.join(os.path.dirname(__file__), "etc/Base.BC03.15lh")
 SL_CONFIG = os.path.join(os.path.dirname(__file__), "etc/XS_SLv01.config")
+SL_CONFIG = os.path.join(os.path.dirname(__file__), "etc/XS_SLv01_15lh.config")
+
 SL_MASK = os.path.join(os.path.dirname(__file__), "etc/Masks.EmLines.SDSS.gm")
 SL_BASES = os.path.join(os.path.dirname(__file__), "etc/bases")
+
 if platform.platform().startswith('Linux'):
     SL_EXE = os.path.join(os.path.dirname(__file__), "etc/starlight")
 else:
@@ -25,6 +30,7 @@ else:
 
 def asciiout(s2d, wl, spec, err=[], resample=1, name='', div=-17,
              frame = 'rest', fmt='spec'):
+
     """ Write the given spectrum into a ascii file. 
     Returns name of ascii file, writes ascii file.
 
@@ -101,10 +107,13 @@ class StarLight:
         self.seed = np.random.randint(1E6, 9E6)
         self.cwd = os.getcwd()
         self.inst = inst
+        
         shutil.copy(SL_BASE, self.cwd)
         shutil.copy(SL_CONFIG, self.cwd)
+        
         if not os.path.isdir(os.path.join(self.cwd, 'bases')):
             shutil.copytree(SL_BASES, os.path.join(self.cwd, 'bases'))
+        
         if not os.path.isfile(SL_EXE):
             print ('ERROR: STARLIGHT executable not found')
             raise SystemExit
@@ -171,7 +180,7 @@ class StarLight:
 
        
        
-    def modOut(self, minwl, maxwl, plot=1):
+    def modOut(self, minwl, maxwl, plot=1, chop=8):
         
         starwl, starfit = np.array([]), np.array([])
         datawl, data, gas, stars = 4*[np.array([])]
@@ -210,44 +219,47 @@ class StarLight:
                     pass
         
             if plot == 1:
-                
-                sel1 = (datawl > minwl) * (datawl < maxwl)
+              pp = PdfPages('%s_starlight.pdf' %(self.inst))
+              sdatawl = np.array_split(datawl, chop)
+              sstarwl = np.array_split(starwl, chop)
+              sdata = np.array_split(data, chop)
+              sstarfit = np.array_split(starfit, chop)
+              sgas = np.array_split(gas, chop)
+              for i in range(chop):
                 fig1 = plt.figure(figsize = (7,4.4))
                 fig1.subplots_adjust(bottom=0.15, top=0.97, left=0.15, right=0.96)
-                ax1 = fig1.add_subplot(1, 1, 1)
-#                ax2 = fig1.add_subplot(2, 1, 2)
-                for ax in [ax1]:#, ax2]:
-                    ax.plot(datawl, 0*datawl, '--', color ='grey')
-                    ax.plot(datawl, data+10, '-', color ='black', label = 'Original spectrum')
-                    ax.plot(starwl, starfit+10, '-', lw=1.2,
+                ax = fig1.add_subplot(1, 1, 1)
+                dl = np.median(sgas[i]) - np.median(sstarfit[i]) \
+                    + 1.5*np.max(sgas[i]) 
+                dl = 0    
+                ax.plot(sdatawl[i], 0*sdatawl[i], '--', color ='grey')
+                ax.plot(sdatawl[i], sdata[i]+dl, '-', color ='black', label = 'Original spectrum')
+                ax.plot(sstarwl[i], sstarfit[i]+dl, '-', lw=1.2,
                             color ='blue', label='Stellar component')
-                    ax.plot(datawl, gas, '-', color ='red', label = 'Gas component')
-                    ax.set_ylabel(r'$F_{\lambda}\,\rm{(10^{-17}\,erg\,s^{-1}\,cm^{-2}\, \AA^{-1}) + const.}$',
+                ax.plot(sdatawl[i], sgas[i], '-', color ='red', label = 'Gas component')
+                ax.set_ylabel(r'$F_{\lambda}\,\rm{(10^{-17}\,erg\,s^{-1}\,cm^{-2}\, \AA^{-1}) + const.}$',
                                fontsize=18)
                 
-                ax1.set_xlabel(r'Restframe wavelength $(\AA)$', fontsize=18)
-                ax1.set_xlim(minwl, maxwl)
-#                ax2.set_xlim(minwl, maxwl)
-                ax1.set_ylim(np.min(gas[sel1]), np.max(data[sel1])*0.1+15)
-#                ax2.set_ylim(np.min(stars[sel1])*-.1, np.max(stars[sel1])*1.4)
-                
-                legend = ax1.legend(frameon=True, prop={'size':15},
+                ax.set_xlabel(r'Restframe wavelength $(\AA)$', fontsize=18)
+                ax.set_ylim(np.min(sgas[i]), 1.2*np.max(sdata[i])+dl)
+                ax.set_xlim(np.min(sdatawl[i]), np.max(sdatawl[i]))
+                legend = ax.legend(frameon=True, prop={'size':15},
                                     scatterpoints=1, loc = 2)
                 rect = legend.get_frame()
                 rect.set_facecolor("0.9")
                 rect.set_linewidth(0.0)
                 rect.set_alpha(0.5)
-
-
-                fig1.savefig('%s_%i_%i_starlight.pdf' %(self.inst, minwl, maxwl))
+                pp.savefig(fig1) 
                 plt.close(fig1)
+              pp.close()
+
                 
         return datawl, data, stars, norm, success
         
         
         
-def runStar(s2d, arm, ascii, minfit, maxfit, minplot, maxplot,
-            plot=1, verbose=1):
+def runStar(s2d, arm, ascii, minfit, maxfit, plot=1, verbose=1):
+
     """ Convinience function to run starlight on an ascii file returning its
     spectral fit and bring it into original rest-frame wavelength scale again
     
@@ -272,8 +284,8 @@ def runStar(s2d, arm, ascii, minfit, maxfit, minplot, maxplot,
         print ('\tStarting starlight')
     t1 = time.time()
     sl = StarLight(filen=ascii, inst=s2d.inst, minwl=minfit, maxwl=maxfit)
-    datawl, data, stars, norm, success =  \
-        sl.modOut(plot=plot, minwl=minplot, maxwl=maxplot)
+    datawl, data, stars, norm, success = \
+        sl.modOut(plot=plot, minwl=minfit, maxwl=maxfit)
     zerospec = np.zeros(s2d.wave[arm].shape)
 
     if success == 1:
@@ -291,8 +303,7 @@ def runStar(s2d, arm, ascii, minfit, maxfit, minplot, maxplot,
         return zerospec, zerospec, success
         
 
-def substarlight(s2d, arm, minplot=4900, maxplot=5100,
-             minfit=3700, maxfit=5300, verbose=1):
+def substarlight(s2d, arm, minfit=3700, maxfit=5300, verbose=1):
     """ Convinience function to subtract a starlight fit based on a single
     spectrum from many spaxels
     
@@ -302,15 +313,34 @@ def substarlight(s2d, arm, minplot=4900, maxplot=5100,
     """
     s2d.stars = {}
 
-    ascii = asciiout(s2d=s2d, wl=s2d.wave[arm], spec=s2d.oneddata[arm], 
-                     err=s2d.onederro[arm], 
+    if arm == 'uvbvis':
+        uvbsel = s2d.wave['uvb'] < 5600
+        vissel = s2d.wave['vis'] >= 5600
+        s2d.wave[arm] = np.append(s2d.wave['uvb'][uvbsel], s2d.wave['vis'][vissel])
+        s2d.oneddata[arm] = np.append(s2d.oneddata['uvb'][uvbsel], s2d.oneddata['vis'][vissel])
+        s2d.onederro[arm] = np.append(s2d.onederro['uvb'][uvbsel], s2d.onederro['vis'][vissel])
+        
+    dl = s2d.wave[arm][1]-s2d.wave[arm][0]
+    if dl < 0.5:
+        wav, dat, ero = binspec(s2d.wave[arm], s2d.oneddata[arm], 
+                        s2d.onederro[arm], wl = int(1/dl), meth='median')
+    else:
+        wav, dat, ero = s2d.wave[arm], s2d.oneddata[arm], s2d.onederro[arm]
+    
+    ascii = asciiout(s2d=s2d, wl=wav, spec=dat, err=ero, 
                      name='%s' %(arm), fmt='txt')
                       
     data, stars, success = runStar(s2d, arm, ascii, 
-               minfit=minfit, maxfit=maxfit, minplot=minplot, maxplot=maxplot,
-               verbose=1)
+               minfit=minfit, maxfit=maxfit, verbose=1)
+    
     os.remove(ascii)
 
     if success == 1:
         s2d.stars[arm] = stars*1E-17
+        if arm == 'uvbvis':
+            s = sp.interpolate.interp1d(s2d.wave[arm], 
+                            stars, fill_value='extrapolate')
+            s2d.stars['uvb'] = s(s2d.wave['uvb'])*1E-17
+            s2d.stars['vis'] = s(s2d.wave['vis'])*1E-17
+        
 

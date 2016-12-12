@@ -183,7 +183,8 @@ class spectrum2d:
 
 ################################################################################
 
-    def set1dFiles(self, arm, filen, mult = 10, errsc = 1., mode = 'txt', dAxis=1):
+    def set1dFiles(self, arm, filen, ymult = 1E-17,
+                   mult = 10, errsc = 1., mode = 'txt', dAxis=1):
         wlkey, wlstart = 'NAXIS%i'%dAxis, 'CRVAL%i'%dAxis
         wlinc, wlpixst = 'CDELT%i'%dAxis, 'CRPIX%i'%dAxis
         if self.datfiles.has_key(arm) and mode == 'txt':
@@ -196,9 +197,9 @@ class spectrum2d:
                     data = np.append(data, float(line.split()[1]))
                     erro = np.append(erro, float(line.split()[2]))
             self.wave[arm] = wave
-            self.oneddata[arm] = data
-            self.onederro[arm] = erro*errsc
-            self.skyrms[arm] = erro*errsc
+            self.oneddata[arm] = data*ymult
+            self.onederro[arm] = erro*errsc*ymult
+            self.skyrms[arm] = erro*errsc*ymult
        
         elif self.datfiles.has_key(arm) and mode == 'fits':
             print '\t1d-data fits file %s as arm %s added' %(filen, arm)
@@ -219,6 +220,7 @@ class spectrum2d:
         tck2 = interpolate.InterpolatedUnivariateSpline(self.skywlair, self.skyradia)
         self.skytel[arm] = tck1(self.wave[arm])
         self.skyrad[arm] = tck2(self.wave[arm])
+        self.output[arm] = os.path.splitext(filen)[0]
 
 ################################################################################  
   
@@ -353,8 +355,8 @@ class spectrum2d:
             skl =  self.head[arm]['NAXIS%i'%tAxis]
             skinc =  self.head[arm]['CDELT%i'%tAxis]
             if self.datarange[arm] == []:
-                if arm in ['uvb', 'vis']: dy = 3.5/skinc
-                elif arm in ['nir']: dy = 3.2/skinc
+                if arm in ['uvb', 'vis']: dy = 3.3/skinc
+                elif arm in ['nir']: dy = 3.1/skinc
                 self.datarange[arm] = [max(7,int(skl/2-dy)), 
                                        min(skl-7, int(skl/2+dy))] 
                 print '\t%s datarange %i to %i pixels' \

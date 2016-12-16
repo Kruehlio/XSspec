@@ -97,7 +97,7 @@ class StarLight:
     """ StarLight class for fitting """
 
     def __init__(self, filen, inst, verbose=0, minwl=3700, maxwl=9400,
-                 run=1):
+                 run=1, red='GD3'):
         self.specfile = filen
         self.minwl=minwl
         self.maxwl=maxwl
@@ -107,6 +107,7 @@ class StarLight:
         self.seed = np.random.randint(1E6, 9E6)
         self.cwd = os.getcwd()
         self.inst = inst
+        self.red = red
         
         shutil.copy(SL_BASE, self.cwd)
         shutil.copy(SL_CONFIG, self.cwd)
@@ -153,7 +154,7 @@ class StarLight:
             'config': os.path.split(SL_CONFIG)[-1], 
             'bases': os.path.split(SL_BASE)[-1], 
             'masks': os.path.split(SL_MASK)[-1], 
-            'red' : 'CAL', 
+            'red' : self.red, 
             'v0_start': 0,
             'vd_start': 150, 
             'output': self.output}
@@ -191,7 +192,6 @@ class StarLight:
             output = f.readlines()
             f.close()
             os.remove(self.sllog)
-#            os.remove(self.output)
             run = 1
         except IOError:
             pass
@@ -217,9 +217,19 @@ class StarLight:
                           datawl = np.append(datawl, outsplit[0])                    
                 except ValueError:
                     pass
-        
+            
+              if len(outsplit) == 3:
+                 if outsplit[1] == '[v0_min':
+                    v0 = float(outsplit[0])
+                 if outsplit[1] == '[vd_min':
+                    vd = float(outsplit[0])       
+                 if outsplit[1] == '[AV_min':
+                    av = float(outsplit[0])       
+
             if plot == 1:
-              pp = PdfPages('%s_starlight.pdf' %(self.inst))
+              pdfname =   '%s_starlight.pdf' %(self.inst)
+              print ('\tPlotting best starlight fit to %s' %pdfname)        
+              pp = PdfPages(pdfname)
               sdatawl = np.array_split(datawl, chop)
               sstarwl = np.array_split(starwl, chop)
               sdata = np.array_split(data, chop)
@@ -253,7 +263,10 @@ class StarLight:
                 plt.close(fig1)
               pp.close()
 
-                
+        print ('\tDelta v = %.1f km/s' %v0)        
+        print ('\tVelocity dispersion sigma = %.1f km/s' %vd)        
+        print ('\tStellar extinction A_V = %.3f mag' %av)        
+
         return datawl, data, stars, norm, success
         
         
@@ -304,13 +317,17 @@ def runStar(s2d, arm, ascii, minfit, maxfit, plot=1, verbose=1):
         
 
 def substarlight(s2d, arm, minfit=3700, maxfit=5300, verbose=1):
-    """ Convinience function to subtract a starlight fit based on a single
-    spectrum from many spaxels
+    """ Convinience function to subtract a starlight fit from a single
+    spectrum
     
     Parameters
     ----------
         arm : float
     """
+    print '\n\t######################'
+    print ('\tInitializing starlight')
+    print '\t######################\n'
+
     s2d.stars = {}
 
     if arm == 'uvbvis':

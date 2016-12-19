@@ -7,15 +7,15 @@ from matplotlib import rc
 from matplotlib.patheffects import withStroke
 from scipy import interpolate, constants
 
-from .functions import (blur_image, ccmred)
-from .astro import (airtovac, vactoair, absll, emll, isnumber, getebv, binspec)
+from analysis.functions import (blur_image, ccmred)
+from utils.astro import (airtovac, vactoair, absll, emll, isnumber, getebv, binspec)
 
-from .postproc import (checkWL, scaleSpec, applyScale, fluxCor, 
+from io.postproc import (checkWL, scaleSpec, applyScale, fluxCor, 
                       telCor, applTel)
-from .onedspec import makeProf, extr1d, write1d, smooth1d, writeVP
-from .analysis import (setCont, fitCont, dlaAbs, stackLines, setMod,
+from analysis.onedspec import makeProf, extr1d, write1d, smooth1d, writeVP
+from analysis.analysis import (setCont, fitCont, dlaAbs, stackLines, setMod,
                       setAscMod, scaleMod)
-from .starlight import runStar, substarlight
+from utils.starlight import runStar, substarlight
 
 c = constants.c/1E3
 abslist, emllist = absll(), emll()

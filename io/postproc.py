@@ -7,8 +7,8 @@ import pyfits
 from matplotlib.backends.backend_pdf import PdfPages
 from scipy import interpolate
 
-from .fitter import onedgaussfit
-from .astro import ergJy, abflux, errs, Jyerg, highabswin
+from ..utils.fitter import onedgaussfit
+from ..utils.astro import ergJy, abflux, errs, Jyerg, highabswin
 
 #==============================================================================
 

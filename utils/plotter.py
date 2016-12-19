@@ -9,9 +9,11 @@ import numpy as np
 
 from .fitter import (onedgaussian, onedgaussfit, onedtwogaussfit, 
                  onedthreegaussfit)
-from .functions import (transNIR, tell)
 from .astro import (absll, emll, errs, fluxab, fluxaberr, ergJy,
                  airtovac, binspec)
+                 
+from ..analysis.functions import (transNIR, tell)
+
                  
 from scipy import integrate
 

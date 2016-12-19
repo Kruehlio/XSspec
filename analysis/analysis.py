@@ -3,9 +3,9 @@ import matplotlib.pyplot as plt
 
 from scipy import interpolate, constants
 
-from .astro import absll, emll, binspec, ergJy, Jyerg, isnumber, abflux
-from .fitter import plfit, plfmfit, pl, plfm
 from .functions import dlafunc, smooth, redlaw
+from ..utils.astro import absll, emll, binspec, ergJy, Jyerg, isnumber, abflux
+from ..utils.fitter import plfit, plfmfit, pl, plfm
 
 abslist, emllist = absll(), emll()
 linelist = dict(emllist.items() + abslist.items())

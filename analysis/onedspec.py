@@ -5,9 +5,9 @@ import time
 
 from matplotlib.backends.backend_pdf import PdfPages
 
-from tom.astro import airtovac, emll, LDMP
-from .fitter import onedmoffatfit, onedgaussfit, onedmoffat
 from .functions import smooth
+from ..utils.astro import airtovac, emll, LDMP
+from ..utils.fitter import onedmoffatfit, onedgaussfit, onedmoffat
 emllist = emll()
 
 
